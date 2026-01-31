@@ -1,23 +1,20 @@
-FROM node:20-slim
+FROM node:20-bullseye
 
 RUN apt-get update && apt-get install -y \
-  ffmpeg \
-  python3 \
-  python3-pip \
-  ca-certificates \
-  curl \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN pip3 install --no-cache-dir yt-dlp
+    ffmpeg \
+    yt-dlp \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY package*.json ./
-
-RUN npm install --production
+RUN npm install --omit=dev
 
 COPY . .
 
 EXPOSE 8000
 
-CMD ["npm", "start"]
+CMD ["node", "index.js"]
