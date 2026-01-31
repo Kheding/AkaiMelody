@@ -1,28 +1,31 @@
-FROM node:20-bookworm
+FROM node:20-slim
 
 # Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y \
   ffmpeg \
   python3 \
   python3-pip \
-  libsodium-dev \
+  ca-certificates \
+  curl \
   && rm -rf /var/lib/apt/lists/*
 
-# Instalar yt-dlp
-RUN pip3 install -U yt-dlp
+# Instalar yt-dlp globalmente
+RUN pip3 install --no-cache-dir yt-dlp
 
-# Directorio de trabajo
+# Crear directorio de la app
 WORKDIR /app
 
-# Copiar dependencias
+# Copiar package files
 COPY package*.json ./
-RUN npm install --omit=dev
 
-# Copiar el resto
+# Instalar dependencias Node
+RUN npm install --production
+
+# Copiar el resto del código
 COPY . .
 
-# Variables
-ENV NODE_ENV=production
+# Puerto dummy para healthcheck
+EXPOSE 8000
 
 # Comando de arranque
-CMD ["node", "index.js"]
+CMD ["npm", "start"]
