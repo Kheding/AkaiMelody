@@ -60,7 +60,7 @@ function cancelLeave() {
 }
 
 /* ================= PLAY ENGINE ================= */
-function playNext() {
+async function playNext() {
   if (queue.length === 0) {
     playing = false;
     scheduleLeave();
@@ -72,30 +72,43 @@ function playNext() {
   const song = queue.shift();
   playing = true;
 
-  const ytdlp = spawn('yt-dlp', [
-    '-f', 'bestaudio',
-    '-o', '-',
-    song
-  ]);
+  try {
+    const ytdlp = spawn('yt-dlp', [
+      '-f', 'bestaudio',
+      '-o', '-',
+      song
+    ]);
 
-  const ffmpeg = new prism.FFmpeg({
-    args: [
-      '-i', 'pipe:0',
-      '-f', 'opus',
-      '-ar', '48000',
-      '-ac', '2'
-    ],
-    executable: ffmpegPath
-  });
+    const ffmpeg = new prism.FFmpeg({
+      args: [
+        '-i', 'pipe:0',
+        '-f', 'opus',
+        '-ar', '48000',
+        '-ac', '2'
+      ],
+      executable: ffmpegPath
+    });
 
-  const stream = ytdlp.stdout.pipe(ffmpeg);
-  const resource = createAudioResource(stream);
+    const stream = ytdlp.stdout.pipe(ffmpeg);
+    const resource = createAudioResource(stream);
 
-  player.play(resource);
-  connection.subscribe(player);
+    player.play(resource);
 
-  if (textChannel) {
-    textChannel.send(`🎶 Reproduciendo: **${song}**`);
+    if (connection) {
+      connection.subscribe(player);
+    }
+
+    if (textChannel) {
+      textChannel.send(`🎶 Reproduciendo: **${song}**`);
+    }
+
+  } catch (err) {
+    console.error('⚠️ Error reproduciendo audio:', err);
+    if (textChannel) {
+      textChannel.send('⚠️ No se pudo reproducir la canción, continuando con la cola...');
+    }
+    playing = false;
+    playNext();
   }
 }
 
@@ -104,6 +117,14 @@ player.on(AudioPlayerStatus.Idle, () => {
   playing = false;
   playNext();
 });
+
+player.on('error', (err) => {
+  console.error('Error en player:', err);
+});
+
+/* ================= CLIENT ERROR HANDLERS ================= */
+client.on('error', (err) => console.error('Error en client:', err));
+client.on('shardError', (err) => console.error('Shard error:', err));
 
 /* ================= COMMANDS ================= */
 client.on('messageCreate', async message => {
@@ -124,28 +145,31 @@ client.on('messageCreate', async message => {
     textChannel = message.channel;
     cancelLeave();
 
-    if (!connection) {
-      connection = joinVoiceChannel({
-        channelId: message.member.voice.channel.id,
-        guildId: message.guild.id,
-        adapterCreator: message.guild.voiceAdapterCreator,
-        selfDeaf: true,
-        preferredEncryptionMode: 'aead_aes256_gcm_rtpsize' // ✅ Añadido para compatibilidad Node 18
-      });
+    try {
+      if (!connection) {
+        connection = joinVoiceChannel({
+          channelId: message.member.voice.channel.id,
+          guildId: message.guild.id,
+          adapterCreator: message.guild.voiceAdapterCreator,
+          selfDeaf: true,
+          preferredEncryptionMode: 'aead_aes256_gcm_rtpsize'
+        });
 
-      await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
+        await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
+      }
+
+      const query = args.join(' ');
+      const song = query.startsWith('http') ? query : `ytsearch1:${query}`;
+
+      queue.push(song);
+      message.reply('✅ Agregado a la cola');
+
+      if (!playing) playNext();
+
+    } catch (err) {
+      console.error('⚠️ Error conectando a voz:', err);
+      message.reply('⚠️ No se pudo unir al canal de voz, pero el bot seguirá activo.');
     }
-
-    const query = args.join(' ');
-    const song =
-      query.startsWith('http')
-        ? query
-        : `ytsearch1:${query}`;
-
-    queue.push(song);
-    message.reply('✅ Agregado a la cola');
-
-    if (!playing) playNext();
   }
 
   /* ===== SKIP ===== */
