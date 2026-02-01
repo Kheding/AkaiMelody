@@ -30,7 +30,7 @@ let textChannel = null;
 let leaveTimeout = null;
 
 /* ================= READY ================= */
-client.once('ready', () => { // Cambié de clientReady -> ready
+client.once('ready', () => {
   console.log(`✅ Bot conectado como ${client.user.tag}`);
 });
 
@@ -49,7 +49,7 @@ function scheduleLeave() {
         textChannel.send('👋 No hay más canciones, saliendo del canal de voz');
       }
     }
-  }, 30_000); // ⏱ 30 segundos
+  }, 30_000);
 }
 
 function cancelLeave() {
@@ -63,7 +63,7 @@ function cancelLeave() {
 function playNext() {
   if (queue.length === 0) {
     playing = false;
-    scheduleLeave(); // 🔥 activar salida automática
+    scheduleLeave();
     return;
   }
 
@@ -129,7 +129,8 @@ client.on('messageCreate', async message => {
         channelId: message.member.voice.channel.id,
         guildId: message.guild.id,
         adapterCreator: message.guild.voiceAdapterCreator,
-        selfDeaf: true
+        selfDeaf: true,
+        preferredEncryptionMode: 'aead_aes256_gcm_rtpsize' // ✅ Añadido para compatibilidad Node 18
       });
 
       await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
