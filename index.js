@@ -5,9 +5,10 @@ const {
   createAudioResource,
   entersState,
   VoiceConnectionStatus,
-  AudioPlayerStatus
+  AudioPlayerStatus,
+  generateDependencyReport
 } = require('@discordjs/voice');
-
+const { DAVESession } = require('@snazzah/davey'); // ✅ DAVE para Node 18
 const { spawn } = require('child_process');
 const prism = require('prism-media');
 const ffmpegPath = require('ffmpeg-static');
@@ -32,6 +33,7 @@ let leaveTimeout = null;
 /* ================= READY ================= */
 client.once('ready', () => {
   console.log(`✅ Bot conectado como ${client.user.tag}`);
+  console.log(generateDependencyReport()); // ✅ Verifica dependencias de voice
 });
 
 /* ================= AUTO LEAVE ================= */
@@ -152,7 +154,8 @@ client.on('messageCreate', async message => {
           guildId: message.guild.id,
           adapterCreator: message.guild.voiceAdapterCreator,
           selfDeaf: true,
-          preferredEncryptionMode: 'aead_aes256_gcm_rtpsize'
+          preferredEncryptionMode: 'aead_aes256_gcm_rtpsize',
+          voiceSessionConstructor: DAVESession // ✅ DAVE
         });
 
         await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
