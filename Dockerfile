@@ -26,6 +26,9 @@ RUN npm install --omit=dev
 # Forzar instalar la última versión de @discordjs/voice compatible con Node 18
 RUN npm install @discordjs/voice@latest
 
+# Instalar soporte DAVE para evitar el error de protocolo
+RUN npm install @snazzah/davey
+
 # ================= COPIAR CÓDIGO =================
 COPY . .
 
