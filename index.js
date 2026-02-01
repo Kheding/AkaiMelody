@@ -30,7 +30,7 @@ let textChannel = null;
 let leaveTimeout = null;
 
 /* ================= READY ================= */
-client.once('clientReady', () => {
+client.once('ready', () => { // Cambié de clientReady -> ready
   console.log(`✅ Bot conectado como ${client.user.tag}`);
 });
 
@@ -183,4 +183,17 @@ client.on('messageCreate', async message => {
   }
 });
 
+/* ================= HTTP SERVER PARA HEALTH CHECK ================= */
+const express = require('express');
+const app = express();
+
+// Endpoint mínimo, solo devuelve texto plano
+app.get('/', (req, res) => {
+  res.send('Bot activo ✅');
+});
+
+// Escucha en el puerto 8000 (el health check de Koyeb)
+app.listen(8000, () => console.log('HTTP server escuchando en puerto 8000'));
+
+/* ================= LOGIN BOT ================= */
 client.login(process.env.TOKEN);
