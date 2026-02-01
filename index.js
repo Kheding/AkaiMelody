@@ -184,16 +184,16 @@ client.on('messageCreate', async message => {
 });
 
 /* ================= HTTP SERVER PARA HEALTH CHECK ================= */
-const express = require('express');
-const app = express();
+const http = require('http');
 
-// Endpoint mínimo, solo devuelve texto plano
-app.get('/', (req, res) => {
-  res.send('Bot activo ✅');
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Bot activo ✅');
 });
 
-// Escucha en el puerto 8000 (el health check de Koyeb)
-app.listen(8000, () => console.log('HTTP server escuchando en puerto 8000'));
+server.listen(8000, () => {
+  console.log('HTTP server escuchando en puerto 8000');
+});
 
 /* ================= LOGIN BOT ================= */
 client.login(process.env.TOKEN);
